@@ -162,7 +162,7 @@
                 inputBuffer = '';
                 logger.appendChild(document.createElement('hr'));
                 logger.scrollTop = logger.scrollHeight
-            } else {
+            } else if (e.key === 'Shift') {} else {
                 inputBuffer += e.key;
                 timer = setTimeout(() => {
                     inputBuffer = '';
