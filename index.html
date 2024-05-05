@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Decoder Magnetic Card</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        #logger {
+            overflow-y: auto;
+        }
+        .log-entry {
+            display: flex;
+            justify-content: space-between;
+        }
+        .log-entry .date {
+            font-family: 'Courier New', monospace;
+            padding: .7em .5em;
+        }
+        .log-entry .data {
+            flex-grow: 1;
+        }
+        pre {
+            margin: .5em 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="logger"></div>
+
+    <script>
+        const logger = document.getElementById('logger');
+        let inputBuffer = '';
+        let timer;
+
+
+        function formatDate(date) {
+            return date.toISOString().replace('T', ' ').replace(/-/g, '.').slice(0, -1);
+        }
+
+        function logData(data, highlight = true) {
+            let logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            let dateElement = document.createElement('div');
+            dateElement.className = 'date';
+            dateElement.textContent = formatDate(new Date());
+            let dataElement = document.createElement('pre');
+            dataElement.className = 'data json';
+            dataElement.textContent = JSON.stringify(data, null, 2);
+            logEntry.appendChild(dateElement);
+            logEntry.appendChild(dataElement);
+            logger.appendChild(logEntry);
+            if (highlight) hljs.highlightElement(dataElement);
+        }
+
+        function parseMagneticStripeData(data) {
+            const track1 = data.match(/%(.*?)\?/);
+            const track2 = data.match(/;(.*?)\?/);
+            const track3 = data.match(/\+(.*?)\?/);
+
+            return {
+                track1: track1 ? track1[1] : null,
+                track2: track2 ? track2[1] : null,
+                track3: track3 ? track3[1] : null
+            };
+        }
+
+        function luhnCheck(num) {
+            let arr = (num + '').split('').reverse();
+            let sum = 0;
+
+            for (let i = 0; i < arr.length; i++) {
+                let digit = parseInt(arr[i]);
+
+                if (i % 2 !== 0) {
+                    digit *= 2;
+                }
+
+                if (digit > 9) {
+                    digit -= 9;
+                }
+
+                sum += digit;
+            }
+
+            return sum % 10 === 0;
+        }
+
+        function calculateMissingDigit(numWithX) {
+            for (let i = 0; i <= 9; i++) {
+                if (luhnCheck(numWithX.replace('X', i.toString()))) {
+                    return i;
+                }
+            }
+
+            return null;
+        }
+
+        function parseFirstTrack(track) {
+            const info = {};
+            const i = track.indexOf('^', 1);
+            const j = track.indexOf('/', i);
+            const k = track.indexOf('^', j);
+
+            const accountNumber = track.slice(1, i).trim();
+            info.accountNumber = accountNumber.match(/.{1,4}/g).join(' ');
+
+            if (accountNumber.includes('X')) {
+                info.missingDigit = calculateMissingDigit(accountNumber.replace(' ', ''));
+            } else {
+                info.luhnCheck = luhnCheck(accountNumber.replace(' ', '')) ? 'Valid' : 'Invalid';
+            }
+
+            info.lastName = track.slice(i+1, j).trim();
+            info.firstName = track.slice(j+1, k).trim();
+            info.expYear = track.slice(k+1, k+3);
+            info.expMonth = track.slice(k+3, k+5);
+
+            return info;
+        }
+
+        function parseSecondTrack(track) {
+            const info = {};
+            const i = track.indexOf('=', 1);
+
+            const accountNumber = track.slice(0, i).trim();
+            info.accountNumber = accountNumber.match(/.{1,4}/g).join(' ');
+
+            if (accountNumber.includes('X')) {
+                info.missingDigit = calculateMissingDigit(accountNumber.replace(' ', ''));
+            } else {
+                info.luhnCheck = luhnCheck(accountNumber.replace(' ', '')) ? 'Valid' : 'Invalid';
+            }
+
+            info.expYear = track.slice(i+1, i+3);
+            info.expMonth = track.slice(i+3, i+5);
+
+            return info;
+        }
+
+        window.addEventListener('keydown', function(e) {
+            clearTimeout(timer);
+            if (e.key === 'Enter') {
+                const parsedData = parseMagneticStripeData(inputBuffer);
+                logData(parsedData);
+
+                if (parsedData.track1) {
+                    const parsedTrack = parseFirstTrack(parsedData.track1);
+                    logData(parsedTrack)
+                }
+
+                if (parsedData.track2) {
+                    const parsedTrack = parseSecondTrack(parsedData.track2);
+                    logData(parsedTrack);
+                }
+
+                inputBuffer = '';
+                logger.appendChild(document.createElement('hr'));
+                logger.scrollTop = logger.scrollHeight
+            } else {
+                inputBuffer += e.key;
+                timer = setTimeout(() => {
+                    inputBuffer = '';
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
