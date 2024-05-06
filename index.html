@@ -42,18 +42,39 @@
             margin: 0;
             border-radius: 0.375rem;
         }
+        #header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #fullscreen {
+            position: fixed;
+            right: 10px;
+            top: 10px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div id="header" class="container">
         <h1 class="mt-4 mb-4">Magnetic card decoder</h1>
         <p class="lead">Development was done using MSR580 Magnetic Stripe Reader</p>
-
-        <div id="logger" class="border rounded p-4 mb-4"><div class="help-block">Swipe your card to get data</div></div>
     </div>
+    <div id="logger" class="border rounded p-4 mb-4"><div class="help-block">Swipe your card to get data</div></div>
+    <button id="fullscreen" type="button" class="btn btn-primary">
+        <svg id="enter-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-fullscreen" viewBox="0 0 16 16">
+          <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5"/>
+        </svg>
+        <svg id="exit-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-fullscreen-exit" viewBox="0 0 16 16" style="display: none">
+            <path d="M5.5 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 4.5 6h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5m5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 10 4.5v-4a.5.5 0 0 1 .5-.5M0 10.5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 6 11.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5m10 1a1.5 1.5 0 0 1 1.5-1.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0z"></path>
+        </svg>
+    </button>
 
     <script>
         const logger = document.getElementById('logger');
+        const header = document.getElementById('header');
+        const fullscreenButton = document.getElementById('fullscreen');
+        const enterFullscreenIcon = document.getElementById('enter-fullscreen-icon')
+        const exitFullscreenIcon = document.getElementById('exit-fullscreen-icon')
         let inputBuffer = '';
         let timer;
 
@@ -161,6 +182,20 @@
 
             return info;
         }
+
+        fullscreenButton.addEventListener('click', function() {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+                header.style.display = 'flex';
+                enterFullscreenIcon.style.display = '';
+                exitFullscreenIcon.style.display = 'none';
+            } else {
+                document.documentElement.requestFullscreen();
+                header.style.display = 'none';
+                enterFullscreenIcon.style.display = 'none';
+                exitFullscreenIcon.style.display = '';
+            }
+        });
 
         window.addEventListener('keydown', function(e) {
             clearTimeout(timer);
