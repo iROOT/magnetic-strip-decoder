@@ -197,6 +197,13 @@
             }
         });
 
+        fullscreenButton.addEventListener('keydown', function(e) {
+            clearTimeout(timer);
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+
         window.addEventListener('keydown', function(e) {
             clearTimeout(timer);
             if (e.key === 'Enter') {
